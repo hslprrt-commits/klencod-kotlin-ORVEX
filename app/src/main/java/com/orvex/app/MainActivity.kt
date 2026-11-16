@@ -15,14 +15,13 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.os.StatFs
+import android.util.DisplayMetrics
 import android.view.Gravity
+import android.view.View
 import android.widget.*
- 
-class MainActivity : Activity() {
+import org.json.JSONArray
 
-    // =====================================
-    // ORVEX THEME
-    // =====================================
+class MainActivity : Activity() {
 
     private val bg = Color.rgb(7, 7, 13)
     private val surface = Color.rgb(17, 15, 27)
@@ -32,47 +31,26 @@ class MainActivity : Activity() {
 
     private lateinit var content: LinearLayout
 
-    // =====================================
-    // FEATURE MODEL
-    // =====================================
-
-    private data class FeatureCard(
-        val icon: String,
-        val title: String,
-        val description: String,
-        val action: () -> Unit
-    )
-
-    // =====================================
-    // DP
-    // =====================================
-
-    private fun dp(value: Int): Int {
-        return (value * resources.displayMetrics.density).toInt()
+    private val preferences by lazy {
+        getSharedPreferences("orvex_data", Context.MODE_PRIVATE)
     }
 
-    // =====================================
-    // BACKGROUND
-    // =====================================
+    private fun dp(value: Int): Int =
+        (value * resources.displayMetrics.density).toInt()
 
     private fun rounded(
         color: Int,
         radius: Int = 18,
         stroke: Int = 0
     ): GradientDrawable {
-
         return GradientDrawable().apply {
             setColor(color)
             cornerRadius = dp(radius).toFloat()
-
-            if (stroke != 0) {
-                setStroke(dp(1), stroke)
-            }
+            if (stroke != 0) setStroke(dp(1), stroke)
         }
     }
 
     private fun gradient(): GradientDrawable {
-
         return GradientDrawable(
             GradientDrawable.Orientation.TL_BR,
             intArrayOf(
@@ -86,56 +64,30 @@ class MainActivity : Activity() {
         }
     }
 
-    // =====================================
-    // TEXT
-    // =====================================
-
     private fun text(
         value: String,
         size: Float,
         color: Int = white,
         bold: Boolean = false
     ): TextView {
-
         return TextView(this).apply {
             text = value
             textSize = size
             setTextColor(color)
             gravity = Gravity.CENTER_VERTICAL
-
-            if (bold) {
-                typeface = Typeface.DEFAULT_BOLD
-            }
+            if (bold) typeface = Typeface.DEFAULT_BOLD
         }
     }
 
-    // =====================================
-    // SECTION
-    // =====================================
-
-    private fun section(
-        title: String,
-        subtitle: String
-    ): LinearLayout {
-
-        return LinearLayout(this).apply {
-
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_VERTICAL
-
-            addView(
-                text(title, 19f, white, true)
-            )
-
-            addView(
-                text(subtitle, 12f, muted)
-            )
+    private fun params(
+        width: Int = -1,
+        height: Int = -2,
+        top: Int = 0
+    ): LinearLayout.LayoutParams {
+        return LinearLayout.LayoutParams(width, height).apply {
+            topMargin = dp(top)
         }
     }
-
-    // =====================================
-    // CREATE ACTIVITY
-    // =====================================
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -151,10 +103,13 @@ class MainActivity : Activity() {
     }
 
     // =====================================
-    // HOME
+    // MAIN LAYOUT
     // =====================================
 
-    private fun showHome() {
+    private fun createPage(
+        title: String,
+        subtitle: String
+    ): LinearLayout {
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -168,266 +123,49 @@ class MainActivity : Activity() {
 
         content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(
-                dp(18),
-                dp(18),
-                dp(18),
-                dp(20)
-            )
+            setPadding(dp(18), dp(18), dp(18), dp(25))
         }
-
-        // HEADER
 
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
 
-        val menu = text("☰", 27f, white, true).apply {
+        val back = text("‹", 34f, purple, true).apply {
             gravity = Gravity.CENTER
+            setOnClickListener { showHome() }
         }
 
-        header.addView(
-            menu,
-            LinearLayout.LayoutParams(dp(45), dp(50))
-        )
+        header.addView(back, LinearLayout.LayoutParams(dp(45), dp(48)))
 
-        val branding = LinearLayout(this).apply {
+        val titleBox = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
         }
 
-        val logoRow = LinearLayout(this).apply {
-            gravity = Gravity.CENTER
-        }
+        titleBox.addView(text(title, 20f, white, true))
+        titleBox.addView(text(subtitle, 11f, muted))
 
-        logoRow.addView(
-            text("ORVE", 27f, white, true)
-        )
-
-        logoRow.addView(
-            text("X", 27f, purple, true)
-        )
-
-        branding.addView(logoRow)
-
-        branding.addView(
-            text("SMART CONTROL CENTER", 9f, muted)
-        )
-
-        header.addView(
-            branding,
-            LinearLayout.LayoutParams(0, -2, 1f)
-        )
-
-        val settings = text("⚙", 25f, purple, true).apply {
-            gravity = Gravity.CENTER
-        }
-
-        header.addView(
-            settings,
-            LinearLayout.LayoutParams(dp(45), dp(50))
-        )
-
-        settings.setOnClickListener {
-            showSettings()
-        }
-
-        menu.setOnClickListener {
-            showSettings()
-        }
+        header.addView(titleBox, LinearLayout.LayoutParams(0, -2, 1f))
 
         content.addView(header)
-
-        // HERO
-
-        val hero = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(
-                dp(20),
-                dp(22),
-                dp(20),
-                dp(22)
-            )
-            background = gradient()
-        }
-
-        hero.addView(
-            text(
-                "مرحباً بك في ORVEX",
-                23f,
-                white,
-                true
-            )
-        )
-
-        val description = text(
-            "مركز التحكم الذكي لهاتفك",
-            14f,
-            muted
-        )
-
-        val descParams = LinearLayout.LayoutParams(-1, -2)
-        descParams.topMargin = dp(8)
-
-        hero.addView(description, descParams)
-
-        val slogan = text(
-            "كل ما تحتاجه في مكان واحد",
-            13f,
-            Color.rgb(205, 160, 255),
-            true
-        )
-
-        val sloganParams = LinearLayout.LayoutParams(-1, -2)
-        sloganParams.topMargin = dp(18)
-
-        hero.addView(slogan, sloganParams)
-
-        val heroParams = LinearLayout.LayoutParams(-1, -2)
-        heroParams.topMargin = dp(25)
-
-        content.addView(hero, heroParams)
-
-        // DEVICE INFORMATION
-
-        addSectionTitle(
-            "معلومات الجهاز",
-            "إحصائيات هاتفك الحالية"
-        )
-
-        val stats = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            background = rounded(
-                surface,
-                18,
-                0xFF44216A.toInt()
-            )
-            setPadding(
-                dp(5),
-                dp(15),
-                dp(5),
-                dp(15)
-            )
-        }
-
-        addStat(stats, "🔋", getBattery(), "البطارية")
-        addStat(stats, "💾", getStorage(), "التخزين")
-        addStat(stats, "▣", getMemory(), "الذاكرة")
-        addStat(
-            stats,
-            "🤖",
-            "Android ${Build.VERSION.RELEASE}",
-            "الإصدار"
-        )
-
-        val statsParams = LinearLayout.LayoutParams(-1, -2)
-        statsParams.topMargin = dp(12)
-
-        content.addView(stats, statsParams)
-
-        // FEATURES
-
-        addSectionTitle(
-            "مركز الأدوات",
-            "اختر الخدمة التي تريد استخدامها"
-        )
-
-        val features = listOf(
-
-            FeatureCard(
-                "🤖",
-                "المساعد الذكي",
-                "اسأل واحصل على إجابات"
-            ) {
-                showAI()
-            },
-
-            FeatureCard(
-                "📁",
-                "مدير الملفات",
-                "تصفح ملفات هاتفك"
-            ) {
-                openFiles()
-            },
-
-            FeatureCard(
-                "🛠",
-                "الأدوات الذكية",
-                "أدوات مفيدة ومتنوعة"
-            ) {
-                showTools()
-            },
-
-            FeatureCard(
-                "📋",
-                "المهام والتنبيهات",
-                "نظم مهامك وتذكيراتك"
-            ) {
-                showTasks()
-            },
-
-            FeatureCard(
-                "🎨",
-                "التخصيص",
-                "تخصيص تجربة التطبيق"
-            ) {
-                showSettings()
-            },
-
-            FeatureCard(
-                "📊",
-                "معلومات الهاتف",
-                "تفاصيل الجهاز"
-            ) {
-                showDeviceInfo()
-            }
-        )
-
-        for (i in features.indices step 2) {
-
-            val row = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-            }
-
-            addFeature(row, features[i])
-
-            if (i + 1 < features.size) {
-                addFeature(row, features[i + 1])
-            }
-
-            val params = LinearLayout.LayoutParams(
-                -1,
-                dp(112)
-            )
-
-            params.topMargin = dp(12)
-
-            content.addView(row, params)
-        }
-
         scroll.addView(content)
 
-        root.addView(
-            scroll,
-            LinearLayout.LayoutParams(0, 0, 1f)
-        )
+        root.addView(scroll, LinearLayout.LayoutParams(0, 0, 1f))
+        root.addView(createNavigation())
 
-        // BOTTOM NAVIGATION
+        return root
+    }
+
+    private fun createNavigation(): LinearLayout {
 
         val nav = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
-            setPadding(
-                dp(5),
-                dp(8),
-                dp(5),
-                dp(8)
-            )
+            setPadding(dp(4), dp(7), dp(4), dp(7))
             setBackgroundColor(surface)
         }
 
-        val navItems = listOf(
+        val items = listOf(
             "⌂" to "الرئيسية",
             "▦" to "الأدوات",
             "▣" to "التطبيقات",
@@ -435,36 +173,33 @@ class MainActivity : Activity() {
             "ⓘ" to "حول"
         )
 
-        navItems.forEachIndexed { index, item ->
+        items.forEachIndexed { index, item ->
 
-            val itemView = LinearLayout(this).apply {
+            val box = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.CENTER
             }
 
-            val selected = index == 0
+            val active = index == 0
 
-            val icon = text(
-                item.first,
-                23f,
-                if (selected) purple else muted,
-                true
-            ).apply {
-                gravity = Gravity.CENTER
-            }
+            box.addView(
+                text(
+                    item.first,
+                    22f,
+                    if (active) purple else muted,
+                    true
+                ).apply { gravity = Gravity.CENTER }
+            )
 
-            val label = text(
-                item.second,
-                10f,
-                if (selected) purple else muted
-            ).apply {
-                gravity = Gravity.CENTER
-            }
+            box.addView(
+                text(
+                    item.second,
+                    10f,
+                    if (active) purple else muted
+                ).apply { gravity = Gravity.CENTER }
+            )
 
-            itemView.addView(icon)
-            itemView.addView(label)
-
-            itemView.setOnClickListener {
+            box.setOnClickListener {
                 when (index) {
                     0 -> showHome()
                     1 -> showTools()
@@ -475,40 +210,134 @@ class MainActivity : Activity() {
             }
 
             nav.addView(
-                itemView,
-                LinearLayout.LayoutParams(
-                    0,
-                    dp(55),
-                    1f
-                )
+                box,
+                LinearLayout.LayoutParams(0, dp(53), 1f)
             )
         }
 
-        root.addView(nav)
-
-        setContentView(root)
+        return nav
     }
 
-    // =====================================
-    // SECTION TITLE
-    // =====================================
-
-    private fun addSectionTitle(
+    private fun showPage(
         title: String,
         subtitle: String
     ) {
+        setContentView(createPage(title, subtitle))
+    }
 
-        val view = section(title, subtitle)
+    private fun addSection(
+        title: String,
+        subtitle: String
+    ) {
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
 
-        val params = LinearLayout.LayoutParams(-1, -2)
-        params.topMargin = dp(25)
+        box.addView(text(title, 18f, white, true))
+        box.addView(text(subtitle, 11f, muted))
 
-        content.addView(view, params)
+        content.addView(box, params(top = 24))
+    }
+
+    private fun addCard(
+        title: String,
+        description: String,
+        icon: String,
+        action: () -> Unit
+    ) {
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+            background = rounded(surface, 17, 0xFF51217E.toInt())
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { action() }
+        }
+
+        card.addView(text("$icon  $title", 16f, white, true))
+        card.addView(text(description, 11f, muted))
+
+        content.addView(card, params(top = 10))
     }
 
     // =====================================
-    // DEVICE STATS
+    // HOME
     // =====================================
+
+    private fun showHome() {
+
+        showPage(
+            "ORVEX",
+            "SMART CONTROL CENTER • VERSION 1.1"
+        )
+
+        val hero = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(22), dp(20), dp(22))
+            background = gradient()
+        }
+
+        hero.addView(text("مرحباً بك في ORVEX", 23f, white, true))
+        hero.addView(
+            text("مركز التحكم الذكي لهاتفك", 14f, muted),
+            params(top = 8)
+        )
+        hero.addView(
+            text("كل ما تحتاجه في مكان واحد", 12f, purple, true),
+            params(top = 15)
+        )
+
+        content.addView(hero, params(top = 20))
+
+        addSection("حالة الجهاز", "إحصائيات الهاتف الحالية")
+
+        val stats = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            background = rounded(surface, 17, 0xFF44216A.toInt())
+            setPadding(dp(5), dp(15), dp(5), dp(15))
+        }
+
+        addStat(stats, "🔋", getBattery(), "البطارية")
+        addStat(stats, "💾", getStorageUsed(), "التخزين")
+        addStat(stats, "▣", getMemoryAvailable(), "RAM")
+        addStat(stats, "🤖", "Android ${Build.VERSION.RELEASE}", "النظام")
+
+        content.addView(stats, params(top = 12))
+
+        addSection("مركز الأدوات", "الخدمات الرئيسية")
+
+        addCard(
+            "معلومات الجهاز",
+            "تفاصيل الهاتف والذاكرة والتخزين والشاشة",
+            "📊"
+        ) { showDeviceInfo() }
+
+        addCard(
+            "ORVEX AI",
+            "واجهة المساعد الذكي",
+            "🤖"
+        ) { showAI() }
+
+        addCard(
+            "مدير الملفات",
+            "فتح الملفات والمستندات",
+            "📁"
+        ) { openFiles() }
+
+        addCard(
+            "المهام والتنبيهات",
+            "إضافة المهام وحفظها وإدارتها",
+            "📋"
+        ) { showTasks() }
+
+        addCard(
+            "الأدوات",
+            "الحاسبة ومشاركة النص وفحص التخزين",
+            "🛠"
+        ) { showTools() }
+    }
 
     private fun addStat(
         parent: LinearLayout,
@@ -516,20 +345,19 @@ class MainActivity : Activity() {
         value: String,
         label: String
     ) {
-
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
         }
 
         box.addView(
-            text(icon, 22f, purple, true).apply {
+            text(icon, 21f, purple, true).apply {
                 gravity = Gravity.CENTER
             }
         )
 
         box.addView(
-            text(value, 12f, white, true).apply {
+            text(value, 11f, white, true).apply {
                 gravity = Gravity.CENTER
                 maxLines = 1
             }
@@ -543,11 +371,7 @@ class MainActivity : Activity() {
 
         parent.addView(
             box,
-            LinearLayout.LayoutParams(
-                0,
-                dp(85),
-                1f
-            )
+            LinearLayout.LayoutParams(0, dp(75), 1f)
         )
     }
 
@@ -556,22 +380,18 @@ class MainActivity : Activity() {
     // =====================================
 
     private fun getBattery(): String {
-
         return try {
-
             val intent = registerReceiver(
                 null,
                 IntentFilter(Intent.ACTION_BATTERY_CHANGED)
             )
 
             val level = intent?.getIntExtra(
-                BatteryManager.EXTRA_LEVEL,
-                -1
+                BatteryManager.EXTRA_LEVEL, -1
             ) ?: -1
 
             val scale = intent?.getIntExtra(
-                BatteryManager.EXTRA_SCALE,
-                -1
+                BatteryManager.EXTRA_SCALE, -1
             ) ?: -1
 
             if (level >= 0 && scale > 0) {
@@ -579,7 +399,29 @@ class MainActivity : Activity() {
             } else {
                 "غير متاح"
             }
+        } catch (e: Exception) {
+            "غير متاح"
+        }
+    }
 
+    private fun getBatteryStatus(): String {
+        return try {
+            val intent = registerReceiver(
+                null,
+                IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+            )
+
+            when (
+                intent?.getIntExtra(
+                    BatteryManager.EXTRA_STATUS, -1
+                )
+            ) {
+                BatteryManager.BATTERY_STATUS_CHARGING -> "قيد الشحن"
+                BatteryManager.BATTERY_STATUS_FULL -> "ممتلئة"
+                BatteryManager.BATTERY_STATUS_DISCHARGING -> "تعمل على البطارية"
+                BatteryManager.BATTERY_STATUS_NOT_CHARGING -> "غير قيد الشحن"
+                else -> "غير معروف"
+            }
         } catch (e: Exception) {
             "غير متاح"
         }
@@ -589,18 +431,26 @@ class MainActivity : Activity() {
     // STORAGE
     // =====================================
 
-    private fun getStorage(): String {
+    private fun storageData(): Triple<Long, Long, Long> {
+        val stat = StatFs(Environment.getDataDirectory().path)
 
+        val total = stat.totalBytes
+        val free = stat.availableBytes
+        val used = total - free
+
+        return Triple(total, used, free)
+    }
+
+    private fun formatGB(bytes: Long): String {
+        return String.format(
+            "%.2f GB",
+            bytes.toDouble() / 1_073_741_824.0
+        )
+    }
+
+    private fun getStorageUsed(): String {
         return try {
-
-            val stat = StatFs(
-                Environment.getDataDirectory().path
-            )
-
-            val used = stat.totalBytes - stat.availableBytes
-
-            "${used / 1_073_741_824L} GB"
-
+            formatGB(storageData().second)
         } catch (e: Exception) {
             "غير متاح"
         }
@@ -610,102 +460,116 @@ class MainActivity : Activity() {
     // MEMORY
     // =====================================
 
-    private fun getMemory(): String {
+    private fun memoryData(): ActivityManager.MemoryInfo {
+        val manager = getSystemService(
+            Context.ACTIVITY_SERVICE
+        ) as ActivityManager
 
+        return ActivityManager.MemoryInfo().also {
+            manager.getMemoryInfo(it)
+        }
+    }
+
+    private fun getMemoryAvailable(): String {
         return try {
-
-            val manager = getSystemService(
-                Context.ACTIVITY_SERVICE
-            ) as ActivityManager
-
-            val info = ActivityManager.MemoryInfo()
-
-            manager.getMemoryInfo(info)
-
-            "${info.availMem / 1_073_741_824L} GB"
-
+            formatGB(memoryData().availMem)
         } catch (e: Exception) {
             "غير متاح"
         }
     }
 
     // =====================================
-    // FEATURE CARD
+    // DEVICE INFORMATION
     // =====================================
 
-    private fun addFeature(
-        row: LinearLayout,
-        feature: FeatureCard
-    ) {
+    private fun showDeviceInfo() {
 
-        val card = LinearLayout(this).apply {
+        showPage(
+            "معلومات الجهاز",
+            "تفاصيل الهاتف الحالية"
+        )
+
+        addSection("معلومات عامة", "هوية الجهاز والنظام")
+
+        addInfo("الشركة المصنعة", Build.MANUFACTURER)
+        addInfo("طراز الجهاز", Build.MODEL)
+        addInfo("اسم الجهاز", Build.DEVICE)
+        addInfo("إصدار Android", Build.VERSION.RELEASE)
+        addInfo("مستوى SDK", Build.VERSION.SDK_INT.toString())
+        addInfo("اسم النظام", Build.DISPLAY)
+
+        addSection("الذاكرة", "حالة RAM")
+
+        try {
+            val memory = memoryData()
+
+            addInfo("إجمالي RAM", formatGB(memory.totalMem))
+            addInfo("الذاكرة المتاحة", formatGB(memory.availMem))
+            addInfo(
+                "الذاكرة المستخدمة تقريبياً",
+                formatGB(memory.totalMem - memory.availMem)
+            )
+        } catch (e: Exception) {
+            addInfo("RAM", "غير متاح")
+        }
+
+        addSection("التخزين", "مساحة قسم بيانات التطبيق")
+
+        try {
+            val storage = storageData()
+
+            addInfo("المساحة الكلية", formatGB(storage.first))
+            addInfo("المساحة المستخدمة", formatGB(storage.second))
+            addInfo("المساحة المتاحة", formatGB(storage.third))
+        } catch (e: Exception) {
+            addInfo("التخزين", "غير متاح")
+        }
+
+        addSection("البطارية", "حالة الطاقة")
+
+        addInfo("مستوى البطارية", getBattery())
+        addInfo("حالة الشحن", getBatteryStatus())
+
+        addSection("الشاشة", "معلومات العرض")
+
+        val metrics = DisplayMetrics()
+        @Suppress("DEPRECATION")
+        windowManager.defaultDisplay.getRealMetrics(metrics)
+
+        addInfo(
+            "الدقة",
+            "${metrics.widthPixels} × ${metrics.heightPixels}"
+        )
+
+        addInfo(
+            "كثافة الشاشة",
+            "${metrics.densityDpi} DPI"
+        )
+
+        addCard(
+            "تحديث المعلومات",
+            "إعادة قراءة بيانات الجهاز",
+            "↻"
+        ) {
+            showDeviceInfo()
+        }
+    }
+
+    private fun addInfo(label: String, value: String) {
+
+        val row = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            background = rounded(
-                surface,
-                18,
-                0xFF51217E.toInt()
-            )
-            setPadding(
-                dp(7),
-                dp(8),
-                dp(7),
-                dp(8)
-            )
-            isClickable = true
-            isFocusable = true
+            setPadding(dp(14), dp(12), dp(14), dp(12))
+            background = rounded(surface, 13)
         }
 
-        card.addView(
-            text(
-                feature.icon,
-                27f,
-                purple,
-                true
-            ).apply {
-                gravity = Gravity.CENTER
-            }
+        row.addView(text(label, 11f, muted))
+        row.addView(
+            text(value, 14f, white, true),
+            params(top = 5)
         )
 
-        card.addView(
-            text(
-                feature.title,
-                14f,
-                white,
-                true
-            ).apply {
-                gravity = Gravity.CENTER
-            }
-        )
-
-        card.addView(
-            text(
-                feature.description,
-                10f,
-                muted
-            ).apply {
-                gravity = Gravity.CENTER
-            }
-        )
-
-        card.setOnClickListener {
-            feature.action.invoke()
-        }
-
-        val params = LinearLayout.LayoutParams(
-            0,
-            -1,
-            1f
-        )
-
-        params.setMargins(
-            dp(5),
-            0,
-            dp(5),
-            0
-        )
-
-        row.addView(card, params)
+        content.addView(row, params(top = 8))
     }
 
     // =====================================
@@ -714,16 +578,45 @@ class MainActivity : Activity() {
 
     private fun showAI() {
 
-        AlertDialog.Builder(this)
-            .setTitle("ORVEX AI")
-            .setMessage(
-                "المساعد الذكي\n\n" +
-                "هذه واجهة أولية للمساعد.\n\n" +
-                "يلزم ربط خدمة ذكاء اصطناعي فعلية " +
-                "حتى يتمكن من معالجة الأسئلة والإجابة عنها."
-            )
-            .setPositiveButton("حسناً", null)
-            .show()
+        showPage(
+            "ORVEX AI",
+            "المساعد الذكي"
+        )
+
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(18), dp(18), dp(18), dp(18))
+            background = gradient()
+        }
+
+        panel.addView(text("ORVEX AI", 23f, white, true))
+
+        panel.addView(
+            text(
+                "المساعد الذكي قيد الربط بخدمة AI فعلية.",
+                13f,
+                muted
+            ),
+            params(top = 12)
+        )
+
+        panel.addView(
+            text(
+                "لن يتم عرض إجابات وهمية أو الادعاء بأن الذكاء الاصطناعي متصل.",
+                12f,
+                Color.rgb(205, 160, 255)
+            ),
+            params(top = 10)
+        )
+
+        content.addView(panel, params(top = 20))
+
+        addSection("الميزات المخطط لها", "قدرات المساعد")
+
+        addInfo("البرمجة", "كتابة الأكواد وشرحها")
+        addInfo("تحليل الأخطاء", "قراءة الأخطاء واقتراح حلول")
+        addInfo("معلومات الجهاز", "شرح بيانات الهاتف")
+        addInfo("المحادثة", "الإجابة عن الأسئلة")
     }
 
     // =====================================
@@ -731,24 +624,14 @@ class MainActivity : Activity() {
     // =====================================
 
     private fun openFiles() {
-
         try {
-
-            val intent = Intent(
-                Intent.ACTION_OPEN_DOCUMENT
-            ).apply {
-
-                addCategory(
-                    Intent.CATEGORY_OPENABLE
-                )
-
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
                 type = "*/*"
             }
 
             startActivityForResult(intent, 100)
-
         } catch (e: Exception) {
-
             toast("تعذر فتح مدير الملفات")
         }
     }
@@ -759,157 +642,160 @@ class MainActivity : Activity() {
 
     private fun showTools() {
 
-        val tools = arrayOf(
-            "حاسبة",
-            "معلومات الجهاز",
-            "مشاركة نص",
-            "فحص التخزين"
-        )
+        showPage("الأدوات", "أدوات ORVEX")
 
-        AlertDialog.Builder(this)
-            .setTitle("الأدوات الذكية")
-            .setItems(tools) { _, index ->
+        addCard("معلومات الجهاز", "عرض بيانات الهاتف", "📊") {
+            showDeviceInfo()
+        }
 
-                when (index) {
+        addCard("الحاسبة", "فتح حاسبة الهاتف", "🧮") {
+            try {
+                val intent = Intent(Intent.ACTION_MAIN)
+                    .addCategory(Intent.CATEGORY_APP_CALCULATOR)
 
-                    0 -> {
-
-                        val intent = Intent(
-                            Intent.ACTION_MAIN
-                        ).addCategory(
-                            Intent.CATEGORY_APP_CALCULATOR
-                        )
-
-                        try {
-                            startActivity(intent)
-                        } catch (e: Exception) {
-                            toast("لا توجد حاسبة متاحة")
-                        }
-                    }
-
-                    1 -> showDeviceInfo()
-
-                    2 -> shareText()
-
-                    3 -> showStorageInfo()
-                }
+                startActivity(intent)
+            } catch (e: Exception) {
+                toast("لا توجد حاسبة متاحة")
             }
-            .setNegativeButton("إغلاق", null)
-            .show()
+        }
+
+        addCard("فحص التخزين", "عرض المساحة المتاحة والمستخدمة", "💾") {
+            showStorageInfo()
+        }
+
+        addCard("مشاركة ORVEX", "مشاركة معلومات التطبيق", "↗") {
+            shareText()
+        }
+    }
+
+    private fun showStorageInfo() {
+        try {
+            val storage = storageData()
+
+            AlertDialog.Builder(this)
+                .setTitle("معلومات التخزين")
+                .setMessage(
+                    "المساحة الكلية: ${formatGB(storage.first)}\n\n" +
+                    "المستخدمة: ${formatGB(storage.second)}\n\n" +
+                    "المتاحة: ${formatGB(storage.third)}"
+                )
+                .setPositiveButton("إغلاق", null)
+                .show()
+        } catch (e: Exception) {
+            toast("تعذر قراءة معلومات التخزين")
+        }
     }
 
     // =====================================
     // TASKS
     // =====================================
 
+    private fun loadTasks(): MutableList<String> {
+        val result = mutableListOf<String>()
+
+        return try {
+            val json = JSONArray(
+                preferences.getString("tasks", "[]") ?: "[]"
+            )
+
+            for (i in 0 until json.length()) {
+                result.add(json.getString(i))
+            }
+
+            result
+        } catch (e: Exception) {
+            result
+        }
+    }
+
+    private fun saveTasks(tasks: List<String>) {
+        val json = JSONArray()
+
+        tasks.forEach { json.put(it) }
+
+        preferences.edit()
+            .putString("tasks", json.toString())
+            .apply()
+    }
+
     private fun showTasks() {
 
-        AlertDialog.Builder(this)
-            .setTitle("المهام والتنبيهات")
-            .setMessage(
-                "قسم المهام قيد التطوير.\n\n" +
-                "سيتم إضافة حفظ المهام والتنبيهات " +
-                "في مرحلة التطوير القادمة."
-            )
-            .setPositiveButton("حسناً", null)
-            .show()
-    }
-
-    // =====================================
-    // DEVICE INFO
-    // =====================================
-
-    private fun showDeviceInfo() {
-
-        val manager = getSystemService(
-            Context.ACTIVITY_SERVICE
-        ) as ActivityManager
-
-        val memory = ActivityManager.MemoryInfo()
-
-        manager.getMemoryInfo(memory)
-
-        val info = """
-            اسم الجهاز: ${Build.MODEL}
-
-            الشركة: ${Build.MANUFACTURER}
-
-            إصدار Android: ${Build.VERSION.RELEASE}
-
-            SDK: ${Build.VERSION.SDK_INT}
-
-            الذاكرة الكلية: ${memory.totalMem / 1_073_741_824L} GB
-
-            الذاكرة المتاحة: ${memory.availMem / 1_073_741_824L} GB
-
-            البطارية: ${getBattery()}
-
-            التخزين المستخدم: ${getStorage()}
-        """.trimIndent()
-
-        AlertDialog.Builder(this)
-            .setTitle("معلومات الجهاز")
-            .setMessage(info)
-            .setPositiveButton("إغلاق", null)
-            .show()
-    }
-
-    // =====================================
-    // STORAGE INFO
-    // =====================================
-
-    private fun showStorageInfo() {
-
-        try {
-
-            val stat = StatFs(
-                Environment.getDataDirectory().path
-            )
-
-            val total = stat.totalBytes / 1_073_741_824L
-            val free = stat.availableBytes / 1_073_741_824L
-            val used = total - free
-
-            AlertDialog.Builder(this)
-                .setTitle("التخزين")
-                .setMessage(
-                    "المساحة الكلية: $total GB\n\n" +
-                    "المساحة المستخدمة: $used GB\n\n" +
-                    "المساحة المتاحة: $free GB"
-                )
-                .setPositiveButton("حسناً", null)
-                .show()
-
-        } catch (e: Exception) {
-
-            toast("تعذر قراءة معلومات التخزين")
-        }
-    }
-
-    // =====================================
-    // SHARE
-    // =====================================
-
-    private fun shareText() {
-
-        val intent = Intent(
-            Intent.ACTION_SEND
-        ).apply {
-
-            type = "text/plain"
-
-            putExtra(
-                Intent.EXTRA_TEXT,
-                "ORVEX - Smart Control Center"
-            )
-        }
-
-        startActivity(
-            Intent.createChooser(
-                intent,
-                "مشاركة ORVEX"
-            )
+        showPage(
+            "المهام",
+            "إدارة المهام المحفوظة"
         )
+
+        addCard(
+            "إضافة مهمة",
+            "إنشاء مهمة جديدة وحفظها",
+            "+"
+        ) {
+            addTask()
+        }
+
+        val tasks = loadTasks()
+
+        addSection(
+            "قائمة المهام",
+            "${tasks.size} مهمة محفوظة"
+        )
+
+        if (tasks.isEmpty()) {
+            addInfo("لا توجد مهام", "أضف مهمتك الأولى")
+        } else {
+            tasks.forEachIndexed { index, task ->
+                addCard(
+                    task,
+                    "اضغط لحذف هذه المهمة",
+                    "📌"
+                ) {
+                    AlertDialog.Builder(this)
+                        .setTitle("حذف المهمة")
+                        .setMessage("هل تريد حذف هذه المهمة؟")
+                        .setPositiveButton("حذف") { _, _ ->
+                            val updated = loadTasks()
+                            if (index in updated.indices) {
+                                updated.removeAt(index)
+                                saveTasks(updated)
+                                showTasks()
+                            }
+                        }
+                        .setNegativeButton("إلغاء", null)
+                        .show()
+                }
+            }
+        }
+    }
+
+    private fun addTask() {
+
+        val input = EditText(this).apply {
+            hint = "اكتب المهمة هنا"
+            setTextColor(white)
+            setHintTextColor(muted)
+            setPadding(dp(12), dp(12), dp(12), dp(12))
+            background = rounded(surface)
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("مهمة جديدة")
+            .setView(input)
+            .setPositiveButton("حفظ") { _, _ ->
+
+                val value = input.text.toString().trim()
+
+                if (value.isNotEmpty()) {
+                    val tasks = loadTasks()
+                    tasks.add(value)
+                    saveTasks(tasks)
+                    showTasks()
+                    toast("تم حفظ المهمة")
+                } else {
+                    toast("اكتب اسم المهمة أولاً")
+                }
+            }
+            .setNegativeButton("إلغاء", null)
+            .show()
     }
 
     // =====================================
@@ -918,13 +804,15 @@ class MainActivity : Activity() {
 
     private fun showApplications() {
 
-        AlertDialog.Builder(this)
-            .setTitle("التطبيقات")
-            .setMessage(
-                "قسم إدارة التطبيقات قيد التطوير."
-            )
-            .setPositiveButton("حسناً", null)
-            .show()
+        showPage(
+            "التطبيقات",
+            "إدارة التطبيقات"
+        )
+
+        addInfo(
+            "إدارة التطبيقات",
+            "هذا القسم يحتاج تطويراً إضافياً."
+        )
     }
 
     // =====================================
@@ -933,27 +821,42 @@ class MainActivity : Activity() {
 
     private fun showSettings() {
 
-        AlertDialog.Builder(this)
-            .setTitle("إعدادات ORVEX")
-            .setItems(
-                arrayOf(
-                    "معلومات الجهاز",
-                    "الأدوات",
-                    "حول التطبيق"
-                )
-            ) { _, index ->
+        showPage(
+            "الإعدادات",
+            "إعدادات ORVEX"
+        )
 
-                when (index) {
+        addCard(
+            "معلومات الجهاز",
+            "عرض بيانات الهاتف",
+            "📊"
+        ) {
+            showDeviceInfo()
+        }
 
-                    0 -> showDeviceInfo()
+        addCard(
+            "الأدوات",
+            "فتح أدوات التطبيق",
+            "🛠"
+        ) {
+            showTools()
+        }
 
-                    1 -> showTools()
+        addCard(
+            "المهام",
+            "إدارة المهام المحفوظة",
+            "📋"
+        ) {
+            showTasks()
+        }
 
-                    2 -> showAbout()
-                }
-            }
-            .setNegativeButton("إغلاق", null)
-            .show()
+        addCard(
+            "حول ORVEX",
+            "معلومات الإصدار",
+            "ⓘ"
+        ) {
+            showAbout()
+        }
     }
 
     // =====================================
@@ -962,16 +865,39 @@ class MainActivity : Activity() {
 
     private fun showAbout() {
 
-        AlertDialog.Builder(this)
-            .setTitle("ORVEX")
-            .setMessage(
-                "ORVEX Smart Control Center\n\n" +
-                "Version 1.0\n\n" +
-                "Developed with Kotlin\n" +
-                "Android Application"
+        showPage(
+            "حول ORVEX",
+            "معلومات التطبيق"
+        )
+
+        addCard(
+            "ORVEX Smart Control Center",
+            "الإصدار 1.1\nتم التطوير باستخدام Kotlin",
+            "O/X"
+        ) {}
+
+        addInfo("الإصدار", "1.1")
+        addInfo("المنصة", "Android")
+        addInfo("لغة البرمجة", "Kotlin")
+    }
+
+    // =====================================
+    // SHARE
+    // =====================================
+
+    private fun shareText() {
+
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(
+                Intent.EXTRA_TEXT,
+                "ORVEX Smart Control Center - Version 1.1"
             )
-            .setPositiveButton("حسناً", null)
-            .show()
+        }
+
+        startActivity(
+            Intent.createChooser(intent, "مشاركة ORVEX")
+        )
     }
 
     // =====================================
@@ -979,7 +905,6 @@ class MainActivity : Activity() {
     // =====================================
 
     private fun toast(message: String) {
-
         Toast.makeText(
             this,
             message,
