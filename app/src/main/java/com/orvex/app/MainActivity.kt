@@ -16,11 +16,13 @@ import android.os.Bundle
 import android.os.Environment
 import android.os.StatFs
 import android.view.Gravity
-import android.view.View
 import android.widget.*
-import java.util.Locale
-
+ 
 class MainActivity : Activity() {
+
+    // =====================================
+    // ORVEX THEME
+    // =====================================
 
     private val bg = Color.rgb(7, 7, 13)
     private val surface = Color.rgb(17, 15, 27)
@@ -30,8 +32,110 @@ class MainActivity : Activity() {
 
     private lateinit var content: LinearLayout
 
-    private fun dp(value: Int): Int =
-        (value * resources.displayMetrics.density).toInt()
+    // =====================================
+    // FEATURE MODEL
+    // =====================================
+
+    private data class FeatureCard(
+        val icon: String,
+        val title: String,
+        val description: String,
+        val action: () -> Unit
+    )
+
+    // =====================================
+    // DP
+    // =====================================
+
+    private fun dp(value: Int): Int {
+        return (value * resources.displayMetrics.density).toInt()
+    }
+
+    // =====================================
+    // BACKGROUND
+    // =====================================
+
+    private fun rounded(
+        color: Int,
+        radius: Int = 18,
+        stroke: Int = 0
+    ): GradientDrawable {
+
+        return GradientDrawable().apply {
+            setColor(color)
+            cornerRadius = dp(radius).toFloat()
+
+            if (stroke != 0) {
+                setStroke(dp(1), stroke)
+            }
+        }
+    }
+
+    private fun gradient(): GradientDrawable {
+
+        return GradientDrawable(
+            GradientDrawable.Orientation.TL_BR,
+            intArrayOf(
+                Color.rgb(43, 12, 76),
+                Color.rgb(15, 10, 29),
+                Color.rgb(9, 8, 17)
+            )
+        ).apply {
+            cornerRadius = dp(22).toFloat()
+            setStroke(dp(1), purple)
+        }
+    }
+
+    // =====================================
+    // TEXT
+    // =====================================
+
+    private fun text(
+        value: String,
+        size: Float,
+        color: Int = white,
+        bold: Boolean = false
+    ): TextView {
+
+        return TextView(this).apply {
+            text = value
+            textSize = size
+            setTextColor(color)
+            gravity = Gravity.CENTER_VERTICAL
+
+            if (bold) {
+                typeface = Typeface.DEFAULT_BOLD
+            }
+        }
+    }
+
+    // =====================================
+    // SECTION
+    // =====================================
+
+    private fun section(
+        title: String,
+        subtitle: String
+    ): LinearLayout {
+
+        return LinearLayout(this).apply {
+
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_VERTICAL
+
+            addView(
+                text(title, 19f, white, true)
+            )
+
+            addView(
+                text(subtitle, 12f, muted)
+            )
+        }
+    }
+
+    // =====================================
+    // CREATE ACTIVITY
+    // =====================================
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,63 +150,9 @@ class MainActivity : Activity() {
         showHome()
     }
 
-    private fun rounded(
-        color: Int,
-        radius: Int = 18,
-        stroke: Int = 0
-    ): GradientDrawable {
-        return GradientDrawable().apply {
-            setColor(color)
-            cornerRadius = dp(radius).toFloat()
-            if (stroke != 0) {
-                setStroke(dp(1), stroke)
-            }
-        }
-    }
-
-    private fun gradient(): GradientDrawable {
-        return GradientDrawable(
-            GradientDrawable.Orientation.TL_BR,
-            intArrayOf(
-                Color.rgb(43, 12, 76),
-                Color.rgb(15, 10, 29),
-                Color.rgb(9, 8, 17)
-            )
-        ).apply {
-            cornerRadius = dp(22).toFloat()
-            setStroke(dp(1), purple)
-        }
-    }
-
-    private fun text(
-        value: String,
-        size: Float,
-        color: Int = white,
-        bold: Boolean = false
-    ): TextView {
-        return TextView(this).apply {
-            text = value
-            textSize = size
-            setTextColor(color)
-            gravity = Gravity.CENTER_VERTICAL
-            if (bold) typeface = Typeface.DEFAULT_BOLD
-        }
-    }
-
-    private fun section(
-        title: String,
-        subtitle: String
-    ): LinearLayout {
-        return LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_VERTICAL
-            addView(
-                text(title, 19f, white, true)
-            )
-            val sub = text(subtitle, 12f, muted)
-            addView(sub)
-        }
-    }
+    // =====================================
+    // HOME
+    // =====================================
 
     private fun showHome() {
 
@@ -118,7 +168,12 @@ class MainActivity : Activity() {
 
         content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(18), dp(18), dp(18), dp(20))
+            setPadding(
+                dp(18),
+                dp(18),
+                dp(18),
+                dp(20)
+            )
         }
 
         // HEADER
@@ -128,23 +183,34 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER_VERTICAL
         }
 
-        val menu = text("☰", 27f, white, true)
-        menu.gravity = Gravity.CENTER
-        header.addView(menu, LinearLayout.LayoutParams(dp(45), dp(50)))
+        val menu = text("☰", 27f, white, true).apply {
+            gravity = Gravity.CENTER
+        }
+
+        header.addView(
+            menu,
+            LinearLayout.LayoutParams(dp(45), dp(50))
+        )
 
         val branding = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
         }
 
-        val logo = text("ORVE", 27f, white, true)
-        val x = text("X", 27f, purple, true)
+        val logoRow = LinearLayout(this).apply {
+            gravity = Gravity.CENTER
+        }
 
-        val logoRow = LinearLayout(this)
-        logoRow.addView(logo)
-        logoRow.addView(x)
+        logoRow.addView(
+            text("ORVE", 27f, white, true)
+        )
+
+        logoRow.addView(
+            text("X", 27f, purple, true)
+        )
 
         branding.addView(logoRow)
+
         branding.addView(
             text("SMART CONTROL CENTER", 9f, muted)
         )
@@ -154,9 +220,14 @@ class MainActivity : Activity() {
             LinearLayout.LayoutParams(0, -2, 1f)
         )
 
-        val settings = text("⚙", 25f, purple, true)
-        settings.gravity = Gravity.CENTER
-        header.addView(settings, LinearLayout.LayoutParams(dp(45), dp(50)))
+        val settings = text("⚙", 25f, purple, true).apply {
+            gravity = Gravity.CENTER
+        }
+
+        header.addView(
+            settings,
+            LinearLayout.LayoutParams(dp(45), dp(50))
+        )
 
         settings.setOnClickListener {
             showSettings()
@@ -168,16 +239,27 @@ class MainActivity : Activity() {
 
         content.addView(header)
 
-        // HERO CARD
+        // HERO
 
         val hero = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(20), dp(22), dp(20), dp(22))
+            setPadding(
+                dp(20),
+                dp(22),
+                dp(20),
+                dp(22)
+            )
             background = gradient()
         }
 
-        val welcome = text("مرحباً بك في ORVEX", 23f, white, true)
-        hero.addView(welcome)
+        hero.addView(
+            text(
+                "مرحباً بك في ORVEX",
+                23f,
+                white,
+                true
+            )
+        )
 
         val description = text(
             "مركز التحكم الذكي لهاتفك",
@@ -187,6 +269,7 @@ class MainActivity : Activity() {
 
         val descParams = LinearLayout.LayoutParams(-1, -2)
         descParams.topMargin = dp(8)
+
         hero.addView(description, descParams)
 
         val slogan = text(
@@ -198,56 +281,105 @@ class MainActivity : Activity() {
 
         val sloganParams = LinearLayout.LayoutParams(-1, -2)
         sloganParams.topMargin = dp(18)
+
         hero.addView(slogan, sloganParams)
 
         val heroParams = LinearLayout.LayoutParams(-1, -2)
         heroParams.topMargin = dp(25)
+
         content.addView(hero, heroParams)
 
         // DEVICE INFORMATION
 
-        addSectionTitle("معلومات الجهاز", "إحصائيات هاتفك الحالية")
+        addSectionTitle(
+            "معلومات الجهاز",
+            "إحصائيات هاتفك الحالية"
+        )
 
         val stats = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            background = rounded(surface, 18, 0xFF44216A.toInt())
-            setPadding(dp(5), dp(15), dp(5), dp(15))
+            background = rounded(
+                surface,
+                18,
+                0xFF44216A.toInt()
+            )
+            setPadding(
+                dp(5),
+                dp(15),
+                dp(5),
+                dp(15)
+            )
         }
 
-        val battery = getBattery()
-        val storage = getStorage()
-        val memory = getMemory()
-
-        addStat(stats, "🔋", battery, "البطارية")
-        addStat(stats, "💾", storage, "التخزين")
-        addStat(stats, "▣", memory, "الذاكرة")
-        addStat(stats, "🤖", "Android ${Build.VERSION.RELEASE}", "الإصدار")
+        addStat(stats, "🔋", getBattery(), "البطارية")
+        addStat(stats, "💾", getStorage(), "التخزين")
+        addStat(stats, "▣", getMemory(), "الذاكرة")
+        addStat(
+            stats,
+            "🤖",
+            "Android ${Build.VERSION.RELEASE}",
+            "الإصدار"
+        )
 
         val statsParams = LinearLayout.LayoutParams(-1, -2)
         statsParams.topMargin = dp(12)
+
         content.addView(stats, statsParams)
 
         // FEATURES
 
-        addSectionTitle("مركز الأدوات", "اختر الخدمة التي تريد استخدامها")
+        addSectionTitle(
+            "مركز الأدوات",
+            "اختر الخدمة التي تريد استخدامها"
+        )
 
         val features = listOf(
-            Triple("🤖", "المساعد الذكي", "اسأل واحصل على إجابات") {
+
+            FeatureCard(
+                "🤖",
+                "المساعد الذكي",
+                "اسأل واحصل على إجابات"
+            ) {
                 showAI()
             },
-            Triple("📁", "مدير الملفات", "تصفح ملفات هاتفك") {
+
+            FeatureCard(
+                "📁",
+                "مدير الملفات",
+                "تصفح ملفات هاتفك"
+            ) {
                 openFiles()
             },
-            Triple("🛠", "الأدوات الذكية", "أدوات مفيدة ومتنوعة") {
+
+            FeatureCard(
+                "🛠",
+                "الأدوات الذكية",
+                "أدوات مفيدة ومتنوعة"
+            ) {
                 showTools()
             },
-            Triple("📋", "المهام والتنبيهات", "نظم مهامك وتذكيراتك") {
+
+            FeatureCard(
+                "📋",
+                "المهام والتنبيهات",
+                "نظم مهامك وتذكيراتك"
+            ) {
                 showTasks()
             },
-            Triple("🎨", "التخصيص", "تخصيص تجربة التطبيق") {
+
+            FeatureCard(
+                "🎨",
+                "التخصيص",
+                "تخصيص تجربة التطبيق"
+            ) {
                 showSettings()
             },
-            Triple("📊", "معلومات الهاتف", "تفاصيل الجهاز") {
+
+            FeatureCard(
+                "📊",
+                "معلومات الهاتف",
+                "تفاصيل الجهاز"
+            ) {
                 showDeviceInfo()
             }
         )
@@ -264,8 +396,13 @@ class MainActivity : Activity() {
                 addFeature(row, features[i + 1])
             }
 
-            val params = LinearLayout.LayoutParams(-1, dp(112))
+            val params = LinearLayout.LayoutParams(
+                -1,
+                dp(112)
+            )
+
             params.topMargin = dp(12)
+
             content.addView(row, params)
         }
 
@@ -281,7 +418,12 @@ class MainActivity : Activity() {
         val nav = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
-            setPadding(dp(5), dp(8), dp(5), dp(8))
+            setPadding(
+                dp(5),
+                dp(8),
+                dp(5),
+                dp(8)
+            )
             setBackgroundColor(surface)
         }
 
@@ -300,20 +442,24 @@ class MainActivity : Activity() {
                 gravity = Gravity.CENTER
             }
 
+            val selected = index == 0
+
             val icon = text(
                 item.first,
                 23f,
-                if (index == 0) purple else muted,
+                if (selected) purple else muted,
                 true
-            )
-            icon.gravity = Gravity.CENTER
+            ).apply {
+                gravity = Gravity.CENTER
+            }
 
             val label = text(
                 item.second,
                 10f,
-                if (index == 0) purple else muted
-            )
-            label.gravity = Gravity.CENTER
+                if (selected) purple else muted
+            ).apply {
+                gravity = Gravity.CENTER
+            }
 
             itemView.addView(icon)
             itemView.addView(label)
@@ -330,7 +476,11 @@ class MainActivity : Activity() {
 
             nav.addView(
                 itemView,
-                LinearLayout.LayoutParams(0, dp(55), 1f)
+                LinearLayout.LayoutParams(
+                    0,
+                    dp(55),
+                    1f
+                )
             )
         }
 
@@ -339,20 +489,26 @@ class MainActivity : Activity() {
         setContentView(root)
     }
 
+    // =====================================
     // SECTION TITLE
+    // =====================================
 
     private fun addSectionTitle(
         title: String,
         subtitle: String
     ) {
+
         val view = section(title, subtitle)
 
         val params = LinearLayout.LayoutParams(-1, -2)
         params.topMargin = dp(25)
+
         content.addView(view, params)
     }
 
+    // =====================================
     // DEVICE STATS
+    // =====================================
 
     private fun addStat(
         parent: LinearLayout,
@@ -360,43 +516,62 @@ class MainActivity : Activity() {
         value: String,
         label: String
     ) {
+
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
         }
 
-        box.addView(text(icon, 22f, purple, true).apply {
-            gravity = Gravity.CENTER
-        })
+        box.addView(
+            text(icon, 22f, purple, true).apply {
+                gravity = Gravity.CENTER
+            }
+        )
 
-        box.addView(text(value, 12f, white, true).apply {
-            gravity = Gravity.CENTER
-            maxLines = 1
-        })
+        box.addView(
+            text(value, 12f, white, true).apply {
+                gravity = Gravity.CENTER
+                maxLines = 1
+            }
+        )
 
-        box.addView(text(label, 10f, muted).apply {
-            gravity = Gravity.CENTER
-        })
+        box.addView(
+            text(label, 10f, muted).apply {
+                gravity = Gravity.CENTER
+            }
+        )
 
         parent.addView(
             box,
-            LinearLayout.LayoutParams(0, dp(85), 1f)
+            LinearLayout.LayoutParams(
+                0,
+                dp(85),
+                1f
+            )
         )
     }
 
+    // =====================================
+    // BATTERY
+    // =====================================
+
     private fun getBattery(): String {
+
         return try {
+
             val intent = registerReceiver(
                 null,
                 IntentFilter(Intent.ACTION_BATTERY_CHANGED)
             )
 
             val level = intent?.getIntExtra(
-                BatteryManager.EXTRA_LEVEL, -1
+                BatteryManager.EXTRA_LEVEL,
+                -1
             ) ?: -1
 
             val scale = intent?.getIntExtra(
-                BatteryManager.EXTRA_SCALE, -1
+                BatteryManager.EXTRA_SCALE,
+                -1
             ) ?: -1
 
             if (level >= 0 && scale > 0) {
@@ -404,122 +579,186 @@ class MainActivity : Activity() {
             } else {
                 "غير متاح"
             }
+
         } catch (e: Exception) {
             "غير متاح"
         }
     }
+
+    // =====================================
+    // STORAGE
+    // =====================================
 
     private fun getStorage(): String {
+
         return try {
-            val stat = StatFs(Environment.getDataDirectory().path)
-            val total = stat.totalBytes
-            val free = stat.availableBytes
-            val used = total - free
+
+            val stat = StatFs(
+                Environment.getDataDirectory().path
+            )
+
+            val used = stat.totalBytes - stat.availableBytes
 
             "${used / 1_073_741_824L} GB"
+
         } catch (e: Exception) {
             "غير متاح"
         }
     }
 
+    // =====================================
+    // MEMORY
+    // =====================================
+
     private fun getMemory(): String {
+
         return try {
+
             val manager = getSystemService(
                 Context.ACTIVITY_SERVICE
             ) as ActivityManager
 
             val info = ActivityManager.MemoryInfo()
+
             manager.getMemoryInfo(info)
 
             "${info.availMem / 1_073_741_824L} GB"
+
         } catch (e: Exception) {
             "غير متاح"
         }
     }
 
+    // =====================================
     // FEATURE CARD
+    // =====================================
 
     private fun addFeature(
         row: LinearLayout,
-        feature: Triple<String, String, String, () -> Unit>
+        feature: FeatureCard
     ) {
+
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            background = rounded(surface, 18, 0xFF51217E.toInt())
-            setPadding(dp(7), dp(8), dp(7), dp(8))
+            background = rounded(
+                surface,
+                18,
+                0xFF51217E.toInt()
+            )
+            setPadding(
+                dp(7),
+                dp(8),
+                dp(7),
+                dp(8)
+            )
             isClickable = true
             isFocusable = true
         }
 
-        card.addView(text(
-            feature.first,
-            27f,
-            purple,
-            true
-        ).apply {
-            gravity = Gravity.CENTER
-        })
+        card.addView(
+            text(
+                feature.icon,
+                27f,
+                purple,
+                true
+            ).apply {
+                gravity = Gravity.CENTER
+            }
+        )
 
-        card.addView(text(
-            feature.second,
-            14f,
-            white,
-            true
-        ).apply {
-            gravity = Gravity.CENTER
-        })
+        card.addView(
+            text(
+                feature.title,
+                14f,
+                white,
+                true
+            ).apply {
+                gravity = Gravity.CENTER
+            }
+        )
 
-        card.addView(text(
-            feature.third,
-            10f,
-            muted
-        ).apply {
-            gravity = Gravity.CENTER
-        })
+        card.addView(
+            text(
+                feature.description,
+                10f,
+                muted
+            ).apply {
+                gravity = Gravity.CENTER
+            }
+        )
 
         card.setOnClickListener {
-            feature.fourth.invoke()
+            feature.action.invoke()
         }
 
-        val params = LinearLayout.LayoutParams(0, -1, 1f)
-        params.setMargins(dp(5), 0, dp(5), 0)
+        val params = LinearLayout.LayoutParams(
+            0,
+            -1,
+            1f
+        )
+
+        params.setMargins(
+            dp(5),
+            0,
+            dp(5),
+            0
+        )
+
         row.addView(card, params)
     }
 
+    // =====================================
     // AI
+    // =====================================
 
     private fun showAI() {
+
         AlertDialog.Builder(this)
             .setTitle("ORVEX AI")
             .setMessage(
                 "المساعد الذكي\n\n" +
-                "هذه الواجهة جاهزة للتطوير.\n" +
-                "يجب ربط خدمة ذكاء اصطناعي فعلية " +
-                "حتى يتمكن المساعد من الإجابة."
+                "هذه واجهة أولية للمساعد.\n\n" +
+                "يلزم ربط خدمة ذكاء اصطناعي فعلية " +
+                "حتى يتمكن من معالجة الأسئلة والإجابة عنها."
             )
             .setPositiveButton("حسناً", null)
             .show()
     }
 
+    // =====================================
     // FILE MANAGER
+    // =====================================
 
     private fun openFiles() {
+
         try {
-            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                addCategory(Intent.CATEGORY_OPENABLE)
+
+            val intent = Intent(
+                Intent.ACTION_OPEN_DOCUMENT
+            ).apply {
+
+                addCategory(
+                    Intent.CATEGORY_OPENABLE
+                )
+
                 type = "*/*"
             }
 
             startActivityForResult(intent, 100)
+
         } catch (e: Exception) {
+
             toast("تعذر فتح مدير الملفات")
         }
     }
 
+    // =====================================
     // TOOLS
+    // =====================================
 
     private fun showTools() {
+
         val tools = arrayOf(
             "حاسبة",
             "معلومات الجهاز",
@@ -530,8 +769,11 @@ class MainActivity : Activity() {
         AlertDialog.Builder(this)
             .setTitle("الأدوات الذكية")
             .setItems(tools) { _, index ->
+
                 when (index) {
+
                     0 -> {
+
                         val intent = Intent(
                             Intent.ACTION_MAIN
                         ).addCategory(
@@ -556,9 +798,12 @@ class MainActivity : Activity() {
             .show()
     }
 
+    // =====================================
     // TASKS
+    // =====================================
 
     private fun showTasks() {
+
         AlertDialog.Builder(this)
             .setTitle("المهام والتنبيهات")
             .setMessage(
@@ -570,14 +815,18 @@ class MainActivity : Activity() {
             .show()
     }
 
+    // =====================================
     // DEVICE INFO
+    // =====================================
 
     private fun showDeviceInfo() {
+
         val manager = getSystemService(
             Context.ACTIVITY_SERVICE
         ) as ActivityManager
 
         val memory = ActivityManager.MemoryInfo()
+
         manager.getMemoryInfo(memory)
 
         val info = """
@@ -605,31 +854,50 @@ class MainActivity : Activity() {
             .show()
     }
 
-    // STORAGE
+    // =====================================
+    // STORAGE INFO
+    // =====================================
 
     private fun showStorageInfo() {
-        val stat = StatFs(Environment.getDataDirectory().path)
 
-        val total = stat.totalBytes / 1_073_741_824L
-        val free = stat.availableBytes / 1_073_741_824L
-        val used = total - free
+        try {
 
-        AlertDialog.Builder(this)
-            .setTitle("التخزين")
-            .setMessage(
-                "المساحة الكلية: $total GB\n\n" +
-                "المساحة المستخدمة: $used GB\n\n" +
-                "المساحة المتاحة: $free GB"
+            val stat = StatFs(
+                Environment.getDataDirectory().path
             )
-            .setPositiveButton("حسناً", null)
-            .show()
+
+            val total = stat.totalBytes / 1_073_741_824L
+            val free = stat.availableBytes / 1_073_741_824L
+            val used = total - free
+
+            AlertDialog.Builder(this)
+                .setTitle("التخزين")
+                .setMessage(
+                    "المساحة الكلية: $total GB\n\n" +
+                    "المساحة المستخدمة: $used GB\n\n" +
+                    "المساحة المتاحة: $free GB"
+                )
+                .setPositiveButton("حسناً", null)
+                .show()
+
+        } catch (e: Exception) {
+
+            toast("تعذر قراءة معلومات التخزين")
+        }
     }
 
+    // =====================================
     // SHARE
+    // =====================================
 
     private fun shareText() {
-        val intent = Intent(Intent.ACTION_SEND).apply {
+
+        val intent = Intent(
+            Intent.ACTION_SEND
+        ).apply {
+
             type = "text/plain"
+
             putExtra(
                 Intent.EXTRA_TEXT,
                 "ORVEX - Smart Control Center"
@@ -637,25 +905,34 @@ class MainActivity : Activity() {
         }
 
         startActivity(
-            Intent.createChooser(intent, "مشاركة ORVEX")
+            Intent.createChooser(
+                intent,
+                "مشاركة ORVEX"
+            )
         )
     }
 
+    // =====================================
     // APPLICATIONS
+    // =====================================
 
     private fun showApplications() {
+
         AlertDialog.Builder(this)
             .setTitle("التطبيقات")
             .setMessage(
-                "سيتم تطوير قسم إدارة التطبيقات لاحقاً."
+                "قسم إدارة التطبيقات قيد التطوير."
             )
             .setPositiveButton("حسناً", null)
             .show()
     }
 
+    // =====================================
     // SETTINGS
+    // =====================================
 
     private fun showSettings() {
+
         AlertDialog.Builder(this)
             .setTitle("إعدادات ORVEX")
             .setItems(
@@ -665,9 +942,13 @@ class MainActivity : Activity() {
                     "حول التطبيق"
                 )
             ) { _, index ->
+
                 when (index) {
+
                     0 -> showDeviceInfo()
+
                     1 -> showTools()
+
                     2 -> showAbout()
                 }
             }
@@ -675,9 +956,12 @@ class MainActivity : Activity() {
             .show()
     }
 
+    // =====================================
     // ABOUT
+    // =====================================
 
     private fun showAbout() {
+
         AlertDialog.Builder(this)
             .setTitle("ORVEX")
             .setMessage(
@@ -690,7 +974,12 @@ class MainActivity : Activity() {
             .show()
     }
 
+    // =====================================
+    // TOAST
+    // =====================================
+
     private fun toast(message: String) {
+
         Toast.makeText(
             this,
             message,
