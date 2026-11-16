@@ -18,7 +18,6 @@ import android.os.Environment
 import android.os.StatFs
 import android.view.Gravity
 import android.view.View
-import android.view.ViewGroup
 import android.widget.*
 import org.json.JSONArray
 import org.json.JSONObject
@@ -135,6 +134,7 @@ class MainActivity : Activity() {
         showHome()
     }
 
+    @Suppress("DEPRECATION")
     override fun onBackPressed() {
         if (currentPage != "home") {
             showHome()
@@ -198,9 +198,10 @@ class MainActivity : Activity() {
 
         scroll.addView(content)
 
+        // FIX: ScrollView must occupy the full available width.
         root.addView(
             scroll,
-            LinearLayout.LayoutParams(0, 0, 1f)
+            LinearLayout.LayoutParams(-1, 0, 1f)
         )
 
         root.addView(createNavigation(selected))
@@ -926,8 +927,6 @@ class MainActivity : Activity() {
 
                 val item = json.get(i)
 
-                // Compatibility with old version:
-                // old tasks were stored as strings.
                 if (item is String) {
                     result.add(TaskItem(item, false))
                 } else if (item is JSONObject) {
