@@ -20,19 +20,6 @@ jobs:
     steps:
       - name: Checkout ORVEX
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: Verify project files
-        shell: bash
-        run: |
-          echo "Checking ORVEX project..."
-
-          test -f settings.gradle -o -f settings.gradle.kts
-          test -f app/build.gradle -o -f app/build.gradle.kts
-          test -f app/src/main/AndroidManifest.xml
-
-          echo "ORVEX project files found."
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -42,50 +29,47 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-34,build-tools;34.0.0'
+          accept-android-sdk-licenses: true
 
-      - name: Install Android SDK packages
+      - name: Verify project files
+        shell: bash
         run: |
-          sdkmanager --install \
-            "platforms;android-34" \
-            "build-tools;34.0.0"
+          test -f app/src/main/AndroidManifest.xml
+          test -f app/build.gradle || test -f app/build.gradle.kts
+          test -f settings.gradle || test -f settings.gradle.kts
+
+          if [ ! -f gradlew ]; then
+            echo "ERROR: Gradle Wrapper is missing."
+            exit 1
+          fi
 
       - name: Build ORVEX APK
         shell: bash
         run: |
           set -o pipefail
-          LOG="$RUNNER_TEMP/orvex-gradle.log"
+          chmod +x gradlew
 
-          if [ -f gradlew ]; then
-            echo "Using Gradle Wrapper"
-            chmod +x gradlew
+          ./gradlew \
+            --no-daemon \
+            --build-cache \
+            :app:assembleDebug \
+            -x lint \
+            -x test 2>&1 | tee "$RUNNER_TEMP/orvex-gradle.log"
 
-            ./gradlew \
-              --no-daemon \
-              --build-cache \
-              :app:assembleDebug \
-              -x lint \
-              -x test 2>&1 | tee "$LOG"
-
-          else
-            echo "ERROR: Gradle Wrapper not found."
-            echo "Add gradlew and gradle/wrapper to the repository."
-            exit 1
-          fi
-
-      - name: Rename APK
+      - name: Prepare APK
         shell: bash
         run: |
           APK="app/build/outputs/apk/debug/app-debug.apk"
 
           if [ ! -f "$APK" ]; then
-            echo "APK not found."
+            echo "ERROR: APK was not generated."
             exit 1
           fi
 
           mkdir -p output
           cp "$APK" output/ORVEX-1.2-debug.apk
-
-          echo "APK prepared successfully."
 
       - name: Upload ORVEX APK
         uses: actions/upload-artifact@v4
