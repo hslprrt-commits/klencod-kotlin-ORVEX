@@ -1,4 +1,5 @@
-name: Build Android Kotlin APK
+
+name: Build ORVEX Android APK
 
 on:
   workflow_dispatch:
@@ -7,20 +8,31 @@ permissions:
   contents: read
 
 concurrency:
-  group: klencod-kotlin-${{ github.repository }}
+  group: orvex-android-${{ github.repository }}
   cancel-in-progress: true
 
 jobs:
   build:
-    name: Build debug APK
+    name: Build ORVEX Debug APK
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
-      - name: Checkout project
+      - name: Checkout ORVEX
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
+
+      - name: Verify project files
+        shell: bash
+        run: |
+          echo "Checking ORVEX project..."
+
+          test -f settings.gradle -o -f settings.gradle.kts
+          test -f app/build.gradle -o -f app/build.gradle.kts
+          test -f app/src/main/AndroidManifest.xml
+
+          echo "ORVEX project files found."
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -30,44 +42,64 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
-        with:
-          packages: 'platforms;android-34 build-tools;34.0.0'
-          accept-android-sdk-licenses: true
 
-      - name: Build debug APK
+      - name: Install Android SDK packages
+        run: |
+          sdkmanager --install \
+            "platforms;android-34" \
+            "build-tools;34.0.0"
+
+      - name: Build ORVEX APK
         shell: bash
         run: |
           set -o pipefail
-          LOG="$RUNNER_TEMP/klencod-gradle.log"
+          LOG="$RUNNER_TEMP/orvex-gradle.log"
 
           if [ -f gradlew ]; then
-            echo "✅ Using Gradle Wrapper (gradlew)"
-            chmod +x gradlew || true
-            ./gradlew --no-daemon --build-cache --parallel \
-              :app:assembleDebug -x lint -x test 2>&1 | tee "$LOG"
+            echo "Using Gradle Wrapper"
+            chmod +x gradlew
+
+            ./gradlew \
+              --no-daemon \
+              --build-cache \
+              :app:assembleDebug \
+              -x lint \
+              -x test 2>&1 | tee "$LOG"
+
           else
-            echo "⚠️ gradlew غير موجود — استخدام gradle من النظام"
-            echo "ℹ️ هذا شائع في المشاريع المستوردة من الخارج"
-            gradle --no-daemon --build-cache --parallel \
-              :app:assembleDebug -x lint -x test 2>&1 | tee "$LOG"
+            echo "ERROR: Gradle Wrapper not found."
+            echo "Add gradlew and gradle/wrapper to the repository."
+            exit 1
           fi
 
-      - name: Print compiler diagnostics on failure
-        if: failure()
+      - name: Rename APK
         shell: bash
         run: |
-          LOG="$RUNNER_TEMP/klencod-gradle.log"
-          echo "===== Klencod compiler diagnostics ====="
-          if [[ -f "$LOG" ]]; then
-            grep -E 'error:|warning:|FAILED|Compilation failed|BUILD FAILED|What went wrong' "$LOG" | tail -n 120 || true
-          else
-            echo "Gradle output file was not created."
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+
+          if [ ! -f "$APK" ]; then
+            echo "APK not found."
+            exit 1
           fi
 
-      - name: Upload APK artifact
+          mkdir -p output
+          cp "$APK" output/ORVEX-1.2-debug.apk
+
+          echo "APK prepared successfully."
+
+      - name: Upload ORVEX APK
         uses: actions/upload-artifact@v4
         with:
-          name: klencod-kotlin-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: ORVEX-1.2-Android-APK
+          path: output/ORVEX-1.2-debug.apk
           if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ORVEX-build-diagnostics
+          path: ${{ runner.temp }}/orvex-gradle.log
+          if-no-files-found: ignore
           retention-days: 7
